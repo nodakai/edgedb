@@ -8,17 +8,18 @@ pub struct TokenizerError(PyObject);
 pyobject_newtype!(TokenizerError);
 
 impl TokenizerError {
-    pub fn new<'p, T: ToPyObject>(py: Python<'p>, args: T) -> PyErr {
+    #[allow(clippy::new_ret_no_self)]
+    pub fn new<T: ToPyObject>(py: Python<'_>, args: T) -> PyErr {
         PyErr::new::<TokenizerError, T>(py, args)
     }
 }
 
 impl cpython::PythonObjectWithCheckedDowncast for TokenizerError {
     #[inline]
-    fn downcast_from<'p>(
-        py: Python<'p>,
+    fn downcast_from(
+        py: Python<'_>,
         obj: PyObject,
-    ) -> Result<TokenizerError, cpython::PythonObjectDowncastError<'p>> {
+    ) -> Result<TokenizerError, cpython::PythonObjectDowncastError<'_>> {
         if TokenizerError::type_object(py).is_instance(py, &obj) {
             Ok(unsafe { PythonObject::unchecked_downcast_from(obj) })
         } else {

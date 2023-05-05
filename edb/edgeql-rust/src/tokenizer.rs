@@ -808,7 +808,7 @@ impl<'a> From<SpannedToken<'a>> for CowToken<'a> {
     }
 }
 
-fn unquote_bytes<'a>(value: &'a str) -> Result<Vec<u8>, String> {
+fn unquote_bytes(value: &str) -> Result<Vec<u8>, String> {
     let idx = value
         .find(|c| c == '\'' || c == '"')
         .ok_or_else(|| "invalid bytes literal: missing quotes".to_string())?;
@@ -816,17 +816,15 @@ fn unquote_bytes<'a>(value: &'a str) -> Result<Vec<u8>, String> {
     match prefix {
         "br" | "rb" => Ok(value[3..value.len() - 1].as_bytes().to_vec()),
         "b" => Ok(_unquote_bytes(&value[2..value.len() - 1])?),
-        _ => {
-            Err(format_args!(
-                "prefix {:?} is not allowed for bytes, allowed: `b`, `rb`",
-                prefix
-            )
-            .to_string())
-        }
+        _ => Err(format_args!(
+            "prefix {:?} is not allowed for bytes, allowed: `b`, `rb`",
+            prefix
+        )
+        .to_string()),
     }
 }
 
-fn _unquote_bytes<'a>(s: &'a str) -> Result<Vec<u8>, String> {
+fn _unquote_bytes(s: &str) -> Result<Vec<u8>, String> {
     let mut res = Vec::with_capacity(s.len());
     let mut bytes = s.as_bytes().iter();
     while let Some(&c) = bytes.next() {

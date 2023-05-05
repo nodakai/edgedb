@@ -63,7 +63,7 @@ impl<'a> From<combine::easy::Error<Token<'a>, Token<'a>>> for Error {
     }
 }
 
-fn token_array<'a>(s: &'a str) -> Result<(Vec<(Token<'a>, Pos)>, Pos), Error> {
+fn token_array(s: &str) -> Result<(Vec<(Token<'_>, Pos)>, Pos), Error> {
     let mut lexer = TokenStream::new(s);
     let mut tokens = Vec::new();
     let mut pos = lexer.position();
@@ -312,10 +312,13 @@ pub fn rewrite(operation: Option<&str>, s: &str) -> Result<Entry, Error> {
                 continue;
             }
             IntValue => {
-                if token.value == "1" && pos.token > 2
-                        && all_src_tokens[pos.token - 1].0.kind == Punctuator
-                        && all_src_tokens[pos.token - 1].0.value == ":"
-                        && all_src_tokens[pos.token - 2].0.kind == Name && all_src_tokens[pos.token - 2].0.value == "first" {
+                if token.value == "1"
+                    && pos.token > 2
+                    && all_src_tokens[pos.token - 1].0.kind == Punctuator
+                    && all_src_tokens[pos.token - 1].0.value == ":"
+                    && all_src_tokens[pos.token - 2].0.kind == Name
+                    && all_src_tokens[pos.token - 2].0.value == "first"
+                {
                     // skip `first: 1` as this is used to fetch singleton
                     // properties from queries where literal `LIMIT 1`
                     // should be present

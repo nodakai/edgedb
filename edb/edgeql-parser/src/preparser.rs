@@ -8,16 +8,17 @@ pub struct Continuation {
 
 /// Returns index of semicolon, or position where to continue search on new
 /// data
+#[allow(clippy::while_let_on_iterator)]
 pub fn full_statement(
     data: &[u8],
     continuation: Option<Continuation>,
 ) -> Result<usize, Continuation> {
     let mut iter = data.iter().enumerate().peekable();
-    continuation.as_ref().map(|cont| {
+    if let Some(cont) = continuation.as_ref() {
         if cont.position > 0 {
             iter.nth(cont.position - 1);
         }
-    });
+    }
     let mut braces_buf = continuation
         .map(|cont| cont.braces)
         .unwrap_or_else(|| Vec::with_capacity(8));

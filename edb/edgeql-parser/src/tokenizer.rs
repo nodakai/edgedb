@@ -200,10 +200,7 @@ impl<'a> TokenStream<'a> {
         // note we may want to get rid of "update_position" here as it's
         // faster to update 'as you go', but this is easier to get right first
         self.update_position(len);
-        self.dot = match kind {
-            Kind::Dot => true,
-            _ => false,
-        };
+        self.dot = matches!(kind, Kind::Dot);
         let value = &self.buf[self.off - len..self.off];
         let end = self.position;
 
@@ -268,21 +265,17 @@ impl<'a> TokenStream<'a> {
                         ))
                     }
                 }
-                _ => {
-                    Err(Error::unexpected_static_message(
-                        "Bare `?` is not an operator, \
+                _ => Err(Error::unexpected_static_message(
+                    "Bare `?` is not an operator, \
                             did you mean `?=` or `??` ?",
-                    ))
-                }
+                )),
             },
             '!' => match iter.next() {
                 Some((_, '=')) => Ok((NotEq, 2)),
-                _ => {
-                    Err(Error::unexpected_static_message(
-                        "Bare `!` is not an operator, \
+                _ => Err(Error::unexpected_static_message(
+                    "Bare `!` is not an operator, \
                             did you mean `!=`?",
-                    ))
-                }
+                )),
             },
             '"' | '\'' => self.parse_string(0, false, false),
             '`' => {
@@ -564,19 +557,15 @@ impl<'a> TokenStream<'a> {
                     };
                     Ok((Substitution, len + 1))
                 }
-                _ => {
-                    Err(Error::unexpected_format(format_args!(
-                        "unexpected character {:?}",
-                        cur_char
-                    )))
-                }
-            },
-            _ => {
-                Err(Error::unexpected_format(format_args!(
+                _ => Err(Error::unexpected_format(format_args!(
                     "unexpected character {:?}",
                     cur_char
-                )))
-            }
+                ))),
+            },
+            _ => Err(Error::unexpected_format(format_args!(
+                "unexpected character {:?}",
+                cur_char
+            ))),
         }
     }
 

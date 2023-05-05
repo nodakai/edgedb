@@ -167,14 +167,10 @@ pub fn normalize(py: Python<'_>, text: &PyString) -> PyResult<Entry> {
                 /* variables: */ entry.variables,
             )?)
         }
-        Err(Error::Tokenizer(msg, pos)) => {
-            Err(TokenizerError::new(py, (msg, py_pos(py, &pos))))
-        }
-        Err(Error::Assertion(msg, pos)) => {
-            Err(PyErr::new::<AssertionError, _>(
-                py,
-                format!("{}: {}", pos, msg),
-            ))
-        }
+        Err(Error::Tokenizer(msg, pos)) => Err(TokenizerError::new(py, (msg, py_pos(py, &pos)))),
+        Err(Error::Assertion(msg, pos)) => Err(PyErr::new::<AssertionError, _>(
+            py,
+            format!("{}: {}", pos, msg),
+        )),
     }
 }

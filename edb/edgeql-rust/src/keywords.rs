@@ -17,19 +17,23 @@ pub fn get_keywords(py: Python) -> PyResult<AllKeywords> {
         py_intern.call(py, (py_str,), None)
     };
     let current = keywords::CURRENT_RESERVED_KEYWORDS
-        .iter().copied()
+        .iter()
+        .copied()
         .map(&intern)
         .collect::<Result<Vec<_>, _>>()?;
     let unreserved = keywords::UNRESERVED_KEYWORDS
-        .iter().copied()
+        .iter()
+        .copied()
         .map(&intern)
         .collect::<Result<Vec<_>, _>>()?;
     let future = keywords::FUTURE_RESERVED_KEYWORDS
-        .iter().copied()
+        .iter()
+        .copied()
         .map(&intern)
         .collect::<Result<Vec<_>, _>>()?;
     let partial = keywords::PARTIAL_RESERVED_KEYWORDS
-        .iter().copied()
+        .iter()
+        .copied()
         .map(&intern)
         .collect::<Result<Vec<_>, _>>()?;
     Ok(AllKeywords {
