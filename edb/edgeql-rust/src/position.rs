@@ -1,7 +1,6 @@
-
-use cpython::exc::{RuntimeError, IndexError};
-use cpython::{py_class, PyErr, PyResult, PyInt, PyBytes, PyList, ToPyObject};
-use cpython::{Python, PyObject};
+use cpython::exc::{IndexError, RuntimeError};
+use cpython::{py_class, PyBytes, PyErr, PyInt, PyList, PyResult, ToPyObject};
+use cpython::{PyObject, Python};
 
 use edgeql_parser::position::InflatedPos;
 
@@ -42,7 +41,7 @@ py_class!(pub class SourcePoint |py| {
 
 fn _offset_of_line(text: &str, target: usize) -> Option<usize> {
     let mut was_lf = false;
-    let mut line = 0;  // this assumes line found by rfind
+    let mut line = 0; // this assumes line found by rfind
     for (idx, &byte) in text.as_bytes().iter().enumerate() {
         if line >= target {
             return Some(idx);
@@ -74,13 +73,10 @@ fn _offset_of_line(text: &str, target: usize) -> Option<usize> {
     Some(text.len())
 }
 
-pub fn offset_of_line(py: Python, text: &str, target: usize) -> PyResult<usize>
-{
+pub fn offset_of_line(py: Python, text: &str, target: usize) -> PyResult<usize> {
     match _offset_of_line(text, target) {
         Some(offset) => Ok(offset),
-        None => {
-            Err(PyErr::new::<IndexError, _>(py, "line number is too large"))
-        }
+        None => Err(PyErr::new::<IndexError, _>(py, "line number is too large")),
     }
 }
 

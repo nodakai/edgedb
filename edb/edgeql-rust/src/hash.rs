@@ -1,13 +1,12 @@
 use std::cell::RefCell;
 
-use cpython::{PyErr, PyString, PyResult, PyObject};
 use cpython::exc::RuntimeError;
+use cpython::{PyErr, PyObject, PyResult, PyString};
 
 use edgeql_parser::hash;
 
 use crate::errors::TokenizerError;
 use crate::pynormalize::py_pos;
-
 
 py_class!(pub class Hasher |py| {
     data _hasher: RefCell<Option<hash::Hasher>>;

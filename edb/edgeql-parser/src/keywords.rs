@@ -105,7 +105,6 @@ pub const UNRESERVED_KEYWORDS: &[&str] = &[
     "write",
 ];
 
-
 pub const PARTIAL_RESERVED_KEYWORDS: &[&str] = &[
     // Keep in sync with `tokenizer::is_keyword`
     "except",
@@ -113,7 +112,6 @@ pub const PARTIAL_RESERVED_KEYWORDS: &[&str] = &[
     "union",
     // Keep in sync with `tokenizer::is_keyword`
 ];
-
 
 pub const FUTURE_RESERVED_KEYWORDS: &[&str] = &[
     // Keep in sync with `tokenizer::is_keyword`

@@ -1,10 +1,9 @@
 use std::borrow::Cow;
 
-use edb_graphql_parser::tokenizer::Token;
 use edb_graphql_parser::position::Pos;
+use edb_graphql_parser::tokenizer::Token;
 
 use crate::entry_point::Error;
-
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum PyTokenKind {
@@ -30,7 +29,6 @@ pub enum PyTokenKind {
     BlockString,
 }
 
-
 #[derive(Debug, PartialEq, Clone)]
 pub struct PyToken {
     pub kind: PyTokenKind,
@@ -39,8 +37,7 @@ pub struct PyToken {
 }
 
 impl PyToken {
-    pub fn new((token, position): &(Token<'_>, Pos)) -> Result<PyToken, Error>
-    {
+    pub fn new((token, position): &(Token<'_>, Pos)) -> Result<PyToken, Error> {
         use edb_graphql_parser::tokenizer::Kind::*;
         use PyTokenKind as T;
 
@@ -63,11 +60,11 @@ impl PyToken {
             (Punctuator, "{") => (T::BraceL, "{".into()),
             (Punctuator, "}") => (T::BraceR, "}".into()),
             (Punctuator, "|") => (T::Pipe, "|".into()),
-            (Punctuator, _)
-            => Err(Error::Assertion("unsupported punctuator".into()))?,
+            (Punctuator, _) => Err(Error::Assertion("unsupported punctuator".into()))?,
         };
         Ok(PyToken {
-            kind, value,
+            kind,
+            value,
             position: Some(*position),
         })
     }

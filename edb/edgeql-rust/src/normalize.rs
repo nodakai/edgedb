@@ -1,14 +1,13 @@
 use std::collections::BTreeSet;
 
-use edgeql_parser::tokenizer::{TokenStream, Kind};
-use edgeql_parser::position::Pos;
-use edgeql_parser::helpers::unquote_string;
-use num_bigint::{BigInt, ToBigInt};
+use crate::float;
+use crate::tokenizer::CowToken;
 use bigdecimal::BigDecimal;
 use blake2::{Blake2b512, Digest};
-use crate::tokenizer::{CowToken};
-use crate::float;
-
+use edgeql_parser::helpers::unquote_string;
+use edgeql_parser::position::Pos;
+use edgeql_parser::tokenizer::{Kind, TokenStream};
+use num_bigint::{BigInt, ToBigInt};
 
 #[derive(Debug, PartialEq)]
 pub enum Value {
@@ -40,21 +39,67 @@ pub enum Error {
     Assertion(String, Pos),
 }
 
-fn push_var<'x>(res: &mut Vec<CowToken<'x>>, module: &'x str, typ: &'x str,
-    var: String, start: Pos, end: Pos)
-{
-    res.push(CowToken {kind: Kind::OpenParen, value: "(".into(), start, end});
-    res.push(CowToken {kind: Kind::Less, value: "<".into(), start, end});
-    res.push(CowToken {kind: Kind::Ident, value: module.into(), start, end});
-    res.push(CowToken {kind: Kind::Namespace, value: "::".into(), start, end});
-    res.push(CowToken {kind: Kind::Ident, value: typ.into(), start, end});
-    res.push(CowToken {kind: Kind::Greater, value: ">".into(), start, end});
-    res.push(CowToken {kind: Kind::Argument, value: var.into(), start, end});
-    res.push(CowToken {kind: Kind::CloseParen, value: ")".into(), start, end});
+fn push_var<'x>(
+    res: &mut Vec<CowToken<'x>>,
+    module: &'x str,
+    typ: &'x str,
+    var: String,
+    start: Pos,
+    end: Pos,
+) {
+    res.push(CowToken {
+        kind: Kind::OpenParen,
+        value: "(".into(),
+        start,
+        end,
+    });
+    res.push(CowToken {
+        kind: Kind::Less,
+        value: "<".into(),
+        start,
+        end,
+    });
+    res.push(CowToken {
+        kind: Kind::Ident,
+        value: module.into(),
+        start,
+        end,
+    });
+    res.push(CowToken {
+        kind: Kind::Namespace,
+        value: "::".into(),
+        start,
+        end,
+    });
+    res.push(CowToken {
+        kind: Kind::Ident,
+        value: typ.into(),
+        start,
+        end,
+    });
+    res.push(CowToken {
+        kind: Kind::Greater,
+        value: ">".into(),
+        start,
+        end,
+    });
+    res.push(CowToken {
+        kind: Kind::Argument,
+        value: var.into(),
+        start,
+        end,
+    });
+    res.push(CowToken {
+        kind: Kind::CloseParen,
+        value: ")".into(),
+        start,
+        end,
+    });
 }
 
 fn scan_vars<'x, 'y: 'x, I>(tokens: I) -> Option<(bool, usize)>
-    where I: IntoIterator<Item=&'x CowToken<'y>>,
+where
+    I: IntoIterator<Item = &'x CowToken<'y>>,
 {
     let mut max_visited = None::<usize>;
     let mut names = BTreeSet::new();
@@ -73,7 +118,7 @@ fn scan_vars<'x, 'y: 'x, I>(tokens: I) -> Option<(bool, usize)>
         let next = max_visited.map(|x| x.checked_add(1)).unwrap_or(Some(0))?;
         Some((false, next))
     } else if max_visited.is_some() {
-        return None  // mixed arguments
+        return None; // mixed arguments
     } else {
         Some((true, names.len()))
     }
@@ -81,14 +126,11 @@ fn scan_vars<'x, 'y: 'x, I>(tokens: I) -> Option<(bool, usize)>
 
 fn hash(text: &str) -> [u8; 64] {
     let mut result = [0u8; 64];
-    result.copy_from_slice(&Blake2b512::new_with_prefix(text.as_bytes())
-                           .finalize());
+    result.copy_from_slice(&Blake2b512::new_with_prefix(text.as_bytes()).finalize());
     return result;
 }
 
-pub fn normalize<'x>(text: &'x str)
-    -> Result<Entry<'x>, Error>
-{
+pub fn normalize<'x>(text: &'x str) -> Result<Entry<'x>, Error> {
     use combine::easy::Error::*;
     let mut token_stream = TokenStream::new(&text);
     let mut tokens = Vec::new();
@@ -96,12 +138,10 @@ pub fn normalize<'x>(text: &'x str)
         match res {
             Ok(t) => tokens.push(CowToken::from(t)),
             Err(Unexpected(s)) => {
-                return Err(Error::Tokenizer(
-                    s.to_string(), token_stream.current_pos()));
+                return Err(Error::Tokenizer(s.to_string(), token_stream.current_pos()));
             }
             Err(e) => {
-                return Err(Error::Tokenizer(
-                    e.to_string(), token_stream.current_pos()));
+                return Err(Error::Tokenizer(e.to_string(), token_stream.current_pos()));
             }
         }
     }
@@ -262,7 +302,11 @@ pub fn normalize<'x>(text: &'x str)
         hash: hash(&processed_source),
         processed_source,
         named_args,
-        first_arg: if counter <= var_idx { None } else { Some(var_idx) },
+        first_arg: if counter <= var_idx {
+            None
+        } else {
+            Some(var_idx)
+        },
         tokens: rewritten_tokens,
         variables: all_variables,
         end_pos,
@@ -272,56 +316,13 @@ pub fn normalize<'x>(text: &'x str)
 fn is_operator(token: &CowToken) -> bool {
     use edgeql_parser::tokenizer::Kind::*;
     match token.kind {
-        | Assign
-        | SubAssign
-        | AddAssign
-        | Arrow
-        | Coalesce
-        | Namespace
-        | DoubleSplat
-        | BackwardLink
-        | FloorDiv
-        | Concat
-        | GreaterEq
-        | LessEq
-        | NotEq
-        | NotDistinctFrom
-        | DistinctFrom
-        | Comma
-        | OpenParen
-        | CloseParen
-        | OpenBracket
-        | CloseBracket
-        | OpenBrace
-        | CloseBrace
-        | Dot
-        | Semicolon
-        | Colon
-        | Add
-        | Sub
-        | Mul
-        | Div
-        | Modulo
-        | Pow
-        | Less
-        | Greater
-        | Eq
-        | Ampersand
-        | Pipe
-        | At
-        => true,
-        | DecimalConst
-        | FloatConst
-        | IntConst
-        | BigIntConst
-        | BinStr
-        | Argument
-        | Str
-        | BacktickName
-        | Keyword
-        | Ident
-        | Substitution
-        => false,
+        Assign | SubAssign | AddAssign | Arrow | Coalesce | Namespace | DoubleSplat
+        | BackwardLink | FloorDiv | Concat | GreaterEq | LessEq | NotEq | NotDistinctFrom
+        | DistinctFrom | Comma | OpenParen | CloseParen | OpenBracket | CloseBracket
+        | OpenBrace | CloseBrace | Dot | Semicolon | Colon | Add | Sub | Mul | Div | Modulo
+        | Pow | Less | Greater | Eq | Ampersand | Pipe | At => true,
+        DecimalConst | FloatConst | IntConst | BigIntConst | BinStr | Argument | Str
+        | BacktickName | Keyword | Ident | Substitution => false,
     }
 }
 
@@ -343,10 +344,10 @@ fn serialize_tokens(tokens: &[CowToken<'_>]) -> String {
 #[cfg(test)]
 mod test {
     use super::scan_vars;
-    use combine::{StreamOnce, Positioned, easy::Error};
-    use edgeql_parser::tokenizer::{TokenStream};
+    use crate::tokenizer::CowToken;
+    use combine::{easy::Error, Positioned, StreamOnce};
     use edgeql_parser::position::Pos;
-    use crate::tokenizer::{CowToken};
+    use edgeql_parser::tokenizer::TokenStream;
 
     fn tokenize<'x>(s: &'x str) -> Vec<CowToken<'x>> {
         let mut r = Vec::new();
@@ -356,8 +357,16 @@ mod test {
                 Ok(x) => r.push(CowToken {
                     kind: x.kind,
                     value: x.value.into(),
-                    start: Pos { line: 0, column: 0, offset: 0 },
-                    end: Pos { line: 0, column: 0, offset: 0 },
+                    start: Pos {
+                        line: 0,
+                        column: 0,
+                        offset: 0,
+                    },
+                    end: Pos {
+                        line: 0,
+                        column: 0,
+                        offset: 0,
+                    },
                 }),
                 Err(ref e) if e == &Error::end_of_input() => break,
                 Err(e) => panic!("Parse error at {}: {}", s.position(), e),
@@ -384,8 +393,10 @@ mod test {
         assert_eq!(scan_vars(&tokenize("$a")).unwrap(), (true, 1));
         assert_eq!(scan_vars(&tokenize("$b $c $d")).unwrap(), (true, 3));
         assert_eq!(scan_vars(&tokenize("$b $c $b")).unwrap(), (true, 2));
-        assert_eq!(scan_vars(&tokenize("$a $b $b $a $c $xx")).unwrap(),
-            (true, 4));
+        assert_eq!(
+            scan_vars(&tokenize("$a $b $b $a $c $xx")).unwrap(),
+            (true, 4)
+        );
     }
 
     #[test]
@@ -395,5 +406,4 @@ mod test {
         assert_eq!(scan_vars(&tokenize("$b $c $100")), None);
         assert_eq!(scan_vars(&tokenize("$10 $xx $yy")), None);
     }
-
 }

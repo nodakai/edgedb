@@ -10,7 +10,11 @@ pub enum Error {
     Tokenizer(String, Pos),
     #[error(
         "{}: closing bracket mismatch, opened {:?} at {}, encountered {:?}",
-        closing_pos, opened, opened_pos, encountered)]
+        closing_pos,
+        opened,
+        opened_pos,
+        encountered
+    )]
     BracketMismatch {
         opened: &'static str,
         encountered: &'static str,
@@ -21,8 +25,12 @@ pub enum Error {
     ExtraBracket(&'static str, Pos),
     #[error("{}: bracket {:?} has never been closed", _1, _0)]
     MissingBracket(&'static str, Pos),
-    #[error("{}: token {:?} is not allowed in expression \
-             (try parenthesize the expression)", _1, _0)]
+    #[error(
+        "{}: token {:?} is not allowed in expression \
+             (try parenthesize the expression)",
+        _1,
+        _0
+    )]
     UnexpectedToken(String, Pos),
     #[error("expression is empty")]
     Empty,
@@ -75,12 +83,10 @@ pub fn check(text: &str) -> Result<(), Error> {
         let (token, pos) = match token {
             Ok(t) => (t.token, t.start),
             Err(combine::easy::Error::Unexpected(s)) => {
-                return Err(Tokenizer(
-                    s.to_string(), parser.current_pos()));
+                return Err(Tokenizer(s.to_string(), parser.current_pos()));
             }
             Err(e) => {
-                return Err(Tokenizer(
-                    e.to_string(), parser.current_pos()));
+                return Err(Tokenizer(e.to_string(), parser.current_pos()));
             }
         };
         empty = false;
@@ -108,7 +114,7 @@ pub fn check(text: &str) -> Result<(), Error> {
             },
             _ => {}
         }
-    };
+    }
     if let Some((bracket, pos)) = brackets.pop() {
         return Err(MissingBracket(bracket_str(bracket), pos));
     }

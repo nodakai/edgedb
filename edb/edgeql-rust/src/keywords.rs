@@ -1,4 +1,4 @@
-use cpython::{Python, ObjectProtocol, PyResult, PyString, PyList, PyObject};
+use cpython::{ObjectProtocol, PyList, PyObject, PyResult, PyString, Python};
 
 use edgeql_parser::keywords;
 
@@ -9,7 +9,6 @@ pub struct AllKeywords {
     pub partial: PyObject,
 }
 
-
 pub fn get_keywords(py: Python) -> PyResult<AllKeywords> {
     let py_intern = py.import("sys")?.get(py, "intern")?;
     let py_frozenset = py.import("builtins")?.get(py, "frozenset")?;
@@ -19,20 +18,24 @@ pub fn get_keywords(py: Python) -> PyResult<AllKeywords> {
     };
     let current = keywords::CURRENT_RESERVED_KEYWORDS
         .iter()
-        .map(|x| *x).map(&intern)
-        .collect::<Result<Vec<_>,_>>()?;
+        .map(|x| *x)
+        .map(&intern)
+        .collect::<Result<Vec<_>, _>>()?;
     let unreserved = keywords::UNRESERVED_KEYWORDS
         .iter()
-        .map(|x| *x).map(&intern)
-        .collect::<Result<Vec<_>,_>>()?;
+        .map(|x| *x)
+        .map(&intern)
+        .collect::<Result<Vec<_>, _>>()?;
     let future = keywords::FUTURE_RESERVED_KEYWORDS
         .iter()
-        .map(|x| *x).map(&intern)
-        .collect::<Result<Vec<_>,_>>()?;
+        .map(|x| *x)
+        .map(&intern)
+        .collect::<Result<Vec<_>, _>>()?;
     let partial = keywords::PARTIAL_RESERVED_KEYWORDS
         .iter()
-        .map(|x| *x).map(&intern)
-        .collect::<Result<Vec<_>,_>>()?;
+        .map(|x| *x)
+        .map(&intern)
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(AllKeywords {
         current: py_frozenset.call(py, (PyList::new(py, &current),), None)?,
         unreserved: py_frozenset.call(py, (PyList::new(py, &unreserved),), None)?,
@@ -40,4 +43,3 @@ pub fn get_keywords(py: Python) -> PyResult<AllKeywords> {
         partial: py_frozenset.call(py, (PyList::new(py, &partial),), None)?,
     })
 }
-
