@@ -349,7 +349,7 @@ mod test {
     use edgeql_parser::position::Pos;
     use edgeql_parser::tokenizer::TokenStream;
 
-    fn tokenize<'x>(s: &'x str) -> Vec<CowToken<'x>> {
+    fn tokenize(s: &str) -> Vec<CowToken<'_>> {
         let mut r = Vec::new();
         let mut s = TokenStream::new(s);
         loop {
