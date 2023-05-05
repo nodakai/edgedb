@@ -1,3 +1,4 @@
+pub mod ast;
 pub mod expr;
 pub mod hash;
 pub mod helpers;
