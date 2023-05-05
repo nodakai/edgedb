@@ -233,7 +233,7 @@ pub fn tokenize(py: Python, s: &PyString) -> PyResult<PyList> {
             };
             TokenizerError::new(py, (err, py_pos(py, &pos)))
         })?;
-    return convert_tokens(py, rust_tokens, token_stream.current_pos());
+    convert_tokens(py, rust_tokens, token_stream.current_pos())
 }
 
 pub fn convert_tokens(
@@ -249,7 +249,7 @@ pub fn convert_tokens(
     let mut buf = Vec::with_capacity(rust_tokens.len());
     let mut tok_iter = rust_tokens.iter().peekable();
     while let Some(tok) = tok_iter.next() {
-        let (name, text, value) = convert(py, &tokens, &mut cache, tok, &mut tok_iter)?;
+        let (name, text, value) = convert(py, tokens, &mut cache, tok, &mut tok_iter)?;
         let py_tok = Token::create_instance(py, name, text, value, tok.start, tok.end)?;
 
         buf.push(py_tok.into_object());
@@ -366,7 +366,7 @@ impl Tokens {
         for kw in FUTURE_RESERVED_KEYWORDS.iter() {
             res.add_kw(py, kw);
         }
-        return res;
+        res
     }
     fn add_kw(&mut self, py: Python, name: &str) {
         let py_name = PyString::new(py, &name.to_ascii_uppercase());
@@ -609,7 +609,7 @@ fn convert(
             PyString::new(py, value),
             cache
                 .decimal(py)?
-                .call(py, (&value[..value.len() - 1].replace("_", ""),), None)?,
+                .call(py, (&value[..value.len() - 1].replace('_', ""),), None)?,
         )),
         FloatConst => {
             let float_value = float::convert(value)
@@ -630,7 +630,7 @@ fn convert(
                 // i64 as absolute (positive) value.
                 // Python has no problem of representing such a positive
                 // value, though.
-                u64::from_str(&value.replace("_", ""))
+                u64::from_str(&value.replace('_', ""))
                     .map_err(|e| {
                         TokenizerError::new(
                             py,
@@ -647,7 +647,7 @@ fn convert(
         BigIntConst => {
             let dec: BigDecimal =
                 value[..value.len() - 1]
-                    .replace("_", "")
+                    .replace('_', "")
                     .parse()
                     .map_err(|e| {
                         TokenizerError::new(
@@ -788,7 +788,7 @@ fn convert(
 
 pub fn get_unpickle_fn(py: Python) -> PyObject {
     let tokens = unsafe { TOKENS.as_ref().expect("module initialized") };
-    return tokens.unpickle_token.clone_ref(py);
+    tokens.unpickle_token.clone_ref(py)
 }
 
 impl<'a, 'b: 'a> From<&'a SpannedToken<'b>> for CowToken<'b> {
@@ -815,9 +815,9 @@ fn unquote_bytes<'a>(value: &'a str) -> Result<Vec<u8>, String> {
     let prefix = &value[..idx];
     match prefix {
         "br" | "rb" => Ok(value[3..value.len() - 1].as_bytes().to_vec()),
-        "b" => Ok(_unquote_bytes(&value[2..value.len() - 1])?.into()),
+        "b" => Ok(_unquote_bytes(&value[2..value.len() - 1])?),
         _ => {
-            return Err(format_args!(
+            Err(format_args!(
                 "prefix {:?} is not allowed for bytes, allowed: `b`, `rb`",
                 prefix
             )
@@ -848,7 +848,7 @@ fn _unquote_bytes<'a>(s: &'a str) -> Result<Vec<u8>, String> {
                                 format!(
                                     "invalid bytes literal: \
                                 invalid escape sequence '\\x{}'",
-                                    hex.unwrap_or_else(|| tail).escape_debug()
+                                    hex.unwrap_or(tail).escape_debug()
                                 )
                             })?;
                         res.push(code);

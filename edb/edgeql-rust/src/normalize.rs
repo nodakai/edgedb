@@ -118,7 +118,7 @@ where
         let next = max_visited.map(|x| x.checked_add(1)).unwrap_or(Some(0))?;
         Some((false, next))
     } else if max_visited.is_some() {
-        return None; // mixed arguments
+        None // mixed arguments
     } else {
         Some((true, names.len()))
     }
@@ -127,12 +127,12 @@ where
 fn hash(text: &str) -> [u8; 64] {
     let mut result = [0u8; 64];
     result.copy_from_slice(&Blake2b512::new_with_prefix(text.as_bytes()).finalize());
-    return result;
+    result
 }
 
 pub fn normalize<'x>(text: &'x str) -> Result<Entry<'x>, Error> {
     use combine::easy::Error::*;
-    let mut token_stream = TokenStream::new(&text);
+    let mut token_stream = TokenStream::new(text);
     let mut tokens = Vec::new();
     for res in &mut token_stream {
         match res {
@@ -194,7 +194,7 @@ pub fn normalize<'x>(text: &'x str) -> Result<Entry<'x>, Error> {
                     next_var(),
                     tok.start, tok.end);
                 variables.push(Variable {
-                    value: Value::Int(tok.value.replace("_", "").parse()
+                    value: Value::Int(tok.value.replace('_', "").parse()
                         .map_err(|e| Error::Tokenizer(
                             format!("can't parse integer: {}", e),
                             tok.start))?),
@@ -217,14 +217,14 @@ pub fn normalize<'x>(text: &'x str) -> Result<Entry<'x>, Error> {
                     next_var(),
                     tok.start, tok.end);
                 let dec: BigDecimal = tok.value[..tok.value.len()-1]
-                        .replace("_", "").parse()
+                        .replace('_', "").parse()
                         .map_err(|e| Error::Tokenizer(
                             format!("can't parse bigint: {}", e),
                             tok.start))?;
                 variables.push(Variable {
                     value: Value::BigInt(dec.to_bigint()
                         .ok_or_else(|| Error::Assertion(
-                            format!("number is not integer"),
+                            "number is not integer".to_string(),
                             tok.start))?),
                 });
                 continue;
@@ -236,7 +236,7 @@ pub fn normalize<'x>(text: &'x str) -> Result<Entry<'x>, Error> {
                 variables.push(Variable {
                     value: Value::Decimal(
                         tok.value[..tok.value.len()-1]
-                        .replace("_", "")
+                        .replace('_', "")
                         .parse()
                         .map_err(|e| Error::Tokenizer(
                             format!("can't parse decimal: {}", e),
@@ -298,7 +298,7 @@ pub fn normalize<'x>(text: &'x str) -> Result<Entry<'x>, Error> {
 
     all_variables.push(variables);
     let processed_source = serialize_tokens(&rewritten_tokens[..]);
-    return Ok(Entry {
+    Ok(Entry {
         hash: hash(&processed_source),
         processed_source,
         named_args,
@@ -310,7 +310,7 @@ pub fn normalize<'x>(text: &'x str) -> Result<Entry<'x>, Error> {
         tokens: rewritten_tokens,
         variables: all_variables,
         end_pos,
-    });
+    })
 }
 
 fn is_operator(token: &CowToken) -> bool {
@@ -338,7 +338,7 @@ fn serialize_tokens(tokens: &[CowToken<'_>]) -> String {
         buf.push_str(&token.value);
         needs_space = !is_operator(token);
     }
-    return buf;
+    buf
 }
 
 #[cfg(test)]
@@ -372,7 +372,7 @@ mod test {
                 Err(e) => panic!("Parse error at {}: {}", s.position(), e),
             }
         }
-        return r;
+        r
     }
 
     #[test]

@@ -5,7 +5,7 @@ use edb_graphql_parser::tokenizer::Token;
 
 use crate::entry_point::Error;
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum PyTokenKind {
     Sof,
     Eof,
@@ -29,7 +29,7 @@ pub enum PyTokenKind {
     BlockString,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct PyToken {
     pub kind: PyTokenKind,
     pub value: Cow<'static, str>,

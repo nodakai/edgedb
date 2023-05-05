@@ -75,7 +75,7 @@ fn new_lines_in_fragment(data: &[u8]) -> u64 {
             }
         }
     }
-    return lines;
+    lines
 }
 
 impl InflatedPos {
@@ -113,7 +113,7 @@ impl InflatedPos {
                 char_offset: prefix_s.chars().count() as u64,
             });
         }
-        return Ok(result);
+        Ok(result)
     }
 }
 

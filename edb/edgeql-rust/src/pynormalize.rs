@@ -105,7 +105,7 @@ pub fn serialize_extra(variables: &[Variable]) -> Result<Bytes, String> {
             }
             Value::Float(ref v) => {
                 codec::Float64
-                    .encode(&mut buf, &P::Float64(v.clone()))
+                    .encode(&mut buf, &P::Float64(*v))
                     .map_err(|e| format!("float cannot be encoded: {}", e))?;
             }
             Value::BigInt(ref v) => {
@@ -136,7 +136,7 @@ pub fn serialize_extra(variables: &[Variable]) -> Result<Bytes, String> {
 pub fn serialize_all(py: Python<'_>, variables: &[Vec<Variable>]) -> Result<PyList, String> {
     let mut buf = Vec::with_capacity(variables.len());
     for vars in variables {
-        let bytes = serialize_extra(&vars)?;
+        let bytes = serialize_extra(vars)?;
         let pybytes = PyBytes::new(py, &bytes).into_object();
         buf.push(pybytes);
     }
@@ -168,13 +168,13 @@ pub fn normalize(py: Python<'_>, text: &PyString) -> PyResult<Entry> {
             )?)
         }
         Err(Error::Tokenizer(msg, pos)) => {
-            return Err(TokenizerError::new(py, (msg, py_pos(py, &pos))))
+            Err(TokenizerError::new(py, (msg, py_pos(py, &pos))))
         }
         Err(Error::Assertion(msg, pos)) => {
-            return Err(PyErr::new::<AssertionError, _>(
+            Err(PyErr::new::<AssertionError, _>(
                 py,
                 format!("{}: {}", pos, msg),
-            ));
+            ))
         }
     }
 }

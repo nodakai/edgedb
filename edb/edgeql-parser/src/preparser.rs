@@ -1,6 +1,6 @@
 use memchr::memmem::find;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Continuation {
     position: usize,
     braces: Vec<u8>,
@@ -70,7 +70,7 @@ pub fn full_statement(
                     Some((_, start @ (b'\'' | b'"'))) => {
                         let end = *start;
                         iter.next();
-                        while let Some((_, b)) = iter.next() {
+                        for (_, b) in iter.by_ref() {
                             if b == end {
                                 continue 'outer;
                             }
@@ -84,7 +84,7 @@ pub fn full_statement(
                 }
             }
             b'`' => {
-                while let Some((_, b)) = iter.next() {
+                for (_, b) in iter.by_ref() {
                     match b {
                         b'`' => continue 'outer,
                         _ => continue,
@@ -96,7 +96,7 @@ pub fn full_statement(
                 });
             }
             b'#' => {
-                while let Some((_, &b)) = iter.next() {
+                for (_, &b) in iter.by_ref() {
                     if b == b'\n' {
                         continue 'outer;
                     }
@@ -164,14 +164,14 @@ pub fn full_statement(
             b'}' | b')' | b']' if braces_buf.last() == Some(b) => {
                 braces_buf.pop();
             }
-            b';' if braces_buf.len() == 0 => return Ok(idx + 1),
+            b';' if braces_buf.is_empty() => return Ok(idx + 1),
             _ => continue,
         }
     }
-    return Err(Continuation {
+    Err(Continuation {
         position: data.len(),
         braces: braces_buf,
-    });
+    })
 }
 
 /// Returns true if the text has no partial statements
@@ -193,7 +193,7 @@ pub fn is_empty(text: &str) -> bool {
             '\u{feff}' | '\r' | '\t' | '\n' | ' ' | ';' => continue,
             // Comment
             '#' => {
-                while let Some(c) = iter.next() {
+                for c in iter.by_ref() {
                     if c == '\r' || c == '\n' {
                         break;
                     }

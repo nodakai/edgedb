@@ -16,7 +16,7 @@ use edb_graphql_parser::visitor::Visit;
 use crate::pytoken::{PyToken, PyTokenKind};
 use crate::token_vec::TokenVec;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Value {
     Str(String),
     Int32(i32),
@@ -26,7 +26,7 @@ pub enum Value {
     Boolean(bool),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Variable {
     pub value: Value,
     pub token: PyToken,
@@ -77,7 +77,7 @@ fn token_array<'a>(s: &'a str) -> Result<(Vec<(Token<'a>, Pos)>, Pos), Error> {
             Err(e) => panic!("Parse error at {}: {}", lexer.position(), e),
         }
     }
-    return Ok((tokens, lexer.position()));
+    Ok((tokens, lexer.position()))
 }
 
 fn find_operation<'a>(
@@ -91,7 +91,7 @@ fn find_operation<'a>(
         };
         return Some(res);
     }
-    return None;
+    None
 }
 
 fn insert_args(dest: &mut Vec<PyToken>, ins: &InsertVars, args: Vec<PyToken>) {
@@ -222,7 +222,7 @@ pub fn rewrite(operation: Option<&str>, s: &str) -> Result<Entry, Error> {
     let mut key_vars = BTreeSet::new();
     let mut value_positions = HashSet::new();
 
-    visit_directives(&mut key_vars, &mut value_positions, &oper);
+    visit_directives(&mut key_vars, &mut value_positions, oper);
 
     for var in &oper.variable_definitions {
         if var.name.starts_with("_edb_arg__") {
@@ -312,19 +312,15 @@ pub fn rewrite(operation: Option<&str>, s: &str) -> Result<Entry, Error> {
                 continue;
             }
             IntValue => {
-                if token.value == "1" {
-                    if pos.token > 2
+                if token.value == "1" && pos.token > 2
                         && all_src_tokens[pos.token - 1].0.kind == Punctuator
                         && all_src_tokens[pos.token - 1].0.value == ":"
-                        && all_src_tokens[pos.token - 2].0.kind == Name
-                        && all_src_tokens[pos.token - 2].0.value == "first"
-                    {
-                        // skip `first: 1` as this is used to fetch singleton
-                        // properties from queries where literal `LIMIT 1`
-                        // should be present
-                        tmp.push(PyToken::new(&(*token, *pos))?);
-                        continue;
-                    }
+                        && all_src_tokens[pos.token - 2].0.kind == Name && all_src_tokens[pos.token - 2].0.value == "first" {
+                    // skip `first: 1` as this is used to fetch singleton
+                    // properties from queries where literal `LIMIT 1`
+                    // should be present
+                    tmp.push(PyToken::new(&(*token, *pos))?);
+                    continue;
                 }
                 let var_name = format!("_edb_arg__{}", variables.len());
                 tmp.push(PyToken {
@@ -405,14 +401,14 @@ pub fn rewrite(operation: Option<&str>, s: &str) -> Result<Entry, Error> {
         tokens.push(PyToken::new(tok)?);
     }
 
-    return Ok(Entry {
+    Ok(Entry {
         key: join_tokens(&tokens),
         key_vars,
         variables,
         defaults,
         tokens,
         end_pos,
-    });
+    })
 }
 
 fn join_tokens<'a, I: IntoIterator<Item = &'a PyToken>>(tokens: I) -> String {
@@ -460,5 +456,5 @@ fn join_tokens<'a, I: IntoIterator<Item = &'a PyToken>>(tokens: I) -> String {
             PyTokenKind::Sof => unreachable!(),
         };
     }
-    return buf;
+    buf
 }

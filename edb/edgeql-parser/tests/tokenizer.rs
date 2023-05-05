@@ -14,7 +14,7 @@ fn tok_str(s: &str) -> Vec<&str> {
             Err(e) => panic!("Parse error at {}: {}", s.position(), e),
         }
     }
-    return r;
+    r
 }
 
 fn tok_typ(s: &str) -> Vec<Kind> {
@@ -27,7 +27,7 @@ fn tok_typ(s: &str) -> Vec<Kind> {
             Err(e) => panic!("Parse error at {}: {}", s.position(), e),
         }
     }
-    return r;
+    r
 }
 
 fn tok_err(s: &str) -> String {

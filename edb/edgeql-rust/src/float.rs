@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 pub fn convert(text: &str) -> Result<f64, Cow<'static, str>> {
     let value = text
-        .replace("_", "")
+        .replace('_', "")
         .parse()
         .map_err(|e| format!("can't parse std::float64: {}", e))?;
     if value == f64::INFINITY || value == -f64::INFINITY {

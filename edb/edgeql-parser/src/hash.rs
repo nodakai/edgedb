@@ -21,7 +21,7 @@ impl Hasher {
         me.hasher.update(b"CREATE\0MIGRATION\0ONTO\0");
         me.hasher.update(parent_id.as_bytes());
         me.hasher.update(b"\0{\0");
-        return me;
+        me
     }
     pub fn add_source(&mut self, data: &str) -> Result<&mut Self, Error> {
         let mut parser = &mut TokenStream::new(data);
@@ -46,7 +46,7 @@ impl Hasher {
             base32::Alphabet::RFC4648 { padding: false },
             &self.hasher.finalize(),
         );
-        return format!("m1{}", hash.to_ascii_lowercase());
+        format!("m1{}", hash.to_ascii_lowercase())
     }
 }
 
@@ -57,7 +57,7 @@ mod test {
     fn hash(initial: &str, text: &str) -> String {
         let mut hasher = Hasher::start_migration(initial);
         hasher.add_source(text).unwrap();
-        return hasher.make_migration_id();
+        hasher.make_migration_id()
     }
 
     #[test]
