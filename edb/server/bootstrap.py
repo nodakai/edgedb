@@ -629,10 +629,20 @@ def prepare_patch(
             reflection=reflection,
         )
 
+        config_spec = config.load_spec_from_schema(schema)
+        sysqueries, report_configs_typedesc = _compile_sys_queries(
+            reflschema,
+            compiler,
+            config_spec,
+        )
+
         updates.update(dict(
             classlayout=reflection.class_layout,
             local_intro_query=local_intro_sql.encode('utf-8'),
             global_intro_query=global_intro_sql.encode('utf-8'),
+            sysqueries=sysqueries.encode('utf-8'),
+            report_configs_typedesc=report_configs_typedesc,
+            configspec=config.spec_to_json(config_spec).encode('utf-8'),
         ))
 
         # This part is wildly hinky
@@ -664,6 +674,8 @@ def prepare_patch(
             else:
                 raise AssertionError(f'unsupported support view command {cv}')
             dv.generate(preblock)
+
+        support_view_commands.add_command(metaschema.get_config_views(schema))
 
         support_view_commands.generate(subblock)
 
@@ -697,15 +709,30 @@ def prepare_patch(
         reflschema=reflschema,
     ))
 
-    bins = ('stdschema', 'reflschema', 'global_schema', 'classlayout')
+    bins = (
+        'stdschema', 'reflschema', 'global_schema', 'classlayout',
+        'report_configs_typedesc',
+    )
+    rawbin = (
+        'report_configs_typedesc',
+    )
+    jsons = (
+        'sysqueries', 'configspec',
+    )
+    unversioned = (
+        'configspec',
+    )
     # Just for the system database, we need to update the cached pickle
     # of everything.
     version_key = patches.get_version_key(num + 1)
     sys_updates: tuple[str, ...] = ()
+
+    spatches = (patch, update)
     for k, v in updates.items():
-        key = f"'{k}{version_key}'"
+        key = f"'{k}{version_key}'" if k not in unversioned else f"'{k}'"
         if k in bins:
-            v = pickle.dumps(v, protocol=pickle.HIGHEST_PROTOCOL)
+            if k not in rawbin:
+                v = pickle.dumps(v, protocol=pickle.HIGHEST_PROTOCOL)
             val = f'{pg_common.quote_bytea_literal(v)}::bytea'
             sys_updates += (f'''
                 INSERT INTO edgedbinstdata.instdata (key, bin)
@@ -714,15 +741,18 @@ def prepare_patch(
                 DO UPDATE SET bin = {val};
             ''',)
         else:
-            val = f'{pg_common.quote_literal(v.decode("utf-8"))}::text'
+            typ, col = ('jsonb', 'json') if k in jsons else ('text', 'text')
+            val = f'{pg_common.quote_literal(v.decode("utf-8"))}::{typ}'
             sys_updates += (f'''
-                INSERT INTO edgedbinstdata.instdata (key, text)
+                INSERT INTO edgedbinstdata.instdata (key, {col})
                 VALUES({key}, {val})
                 ON CONFLICT (key)
-                DO UPDATE SET text = {val};
+                DO UPDATE SET {col} = {val};
             ''',)
+        if k in unversioned:
+            spatches += (sys_updates[-1],)
 
-    return (patch, update), sys_updates, updates, False
+    return spatches, sys_updates, updates, False
 
 
 class StdlibBits(NamedTuple):
@@ -1340,8 +1370,7 @@ async def _configure(
             await _execute(ctx.conn, sql)
 
 
-async def _compile_sys_queries(
-    ctx: BootstrapContext,
+def _compile_sys_queries(
     schema: s_schema.Schema,
     compiler: edbcompiler.Compiler,
     config_spec: config.Spec,
@@ -1453,17 +1482,7 @@ async def _compile_sys_queries(
     report_configs_typedesc = units[0].out_type_id + units[0].out_type_data
     queries['report_configs'] = units[0].sql[0].decode()
 
-    await _store_static_json_cache(
-        ctx,
-        'sysqueries',
-        json.dumps(queries),
-    )
-
-    await _store_static_bin_cache(
-        ctx,
-        'report_configs_typedesc',
-        report_configs_typedesc,
-    )
+    return json.dumps(queries), report_configs_typedesc
 
 
 async def _populate_misc_instance_data(
@@ -1864,11 +1883,22 @@ async def _bootstrap(ctx: BootstrapContext) -> None:
                 edbdef.EDGEDB_TEMPLATE_DB: new_template_db_id,
             }
         )
-        await _compile_sys_queries(
-            tpl_ctx,
+        sysqueries, report_configs_typedesc = _compile_sys_queries(
             stdlib.reflschema,
             compiler,
             config_spec,
+        )
+        version_key = patches.get_version_key(len(patches.PATCHES))
+        await _store_static_json_cache(
+            ctx,
+            f'sysqueries{version_key}',
+            sysqueries,
+        )
+
+        await _store_static_bin_cache(
+            ctx,
+            f'report_configs_typedesc{version_key}',
+            report_configs_typedesc,
         )
 
         schema = s_schema.FlatSchema()

@@ -203,6 +203,9 @@ CREATE ABSTRACT TYPE cfg::AbstractConfig extending cfg::ConfigObject {
         SET default := 100;
     };
 
+    CREATE PROPERY _AAAAAAAAAAAAAAAAAAAAA -> std::str {
+        SET default := 'false';
+    }
 };
 
 

@@ -71,4 +71,11 @@ There are currently 4 kinds:
  * repair - fix up inconsistencies in *user* schemas
 """
 PATCHES: list[tuple[str, str]] = _setup_patches([
+    ('edgeql+schema', '''
+ALTER TYPE cfg::AbstractConfig {
+    CREATE PROPERTY _AAAAAAAAAAAAAAAAAAAAA -> std::str {
+        SET default := 'false';
+    }
+}
+'''),
 ])
