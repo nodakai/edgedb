@@ -197,7 +197,9 @@ def dump_sql(sql, *args, **kwargs):
 
 def dump_edgeql(eql, *args, **kwargs):
     import edb.edgeql.codegen
-    dump_code(edb.edgeql.codegen.generate_source(eql, *args, **kwargs))
+    code = edb.edgeql.codegen.generate_source(eql, *args, **kwargs)
+    print(code)
+    dump_code(code)
 
 
 def set_trace(**kwargs):

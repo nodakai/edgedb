@@ -24,8 +24,10 @@ import multiprocessing
 
 from edb import errors
 from edb.common import parsing
+from edb.common import context as pctx
 
 from . import parser as qlparser
+from .grammar import tokens as qltokens
 from .. import ast as qlast
 from .. import tokenizer as qltokenizer
 
@@ -54,6 +56,41 @@ def parse_fragment(
         source = qltokenizer.Source.from_string(source)
     parser = qlparser.EdgeQLExpressionParser()
     res = parser.parse(source, filename=filename)
+    assert isinstance(res, qlast.Expr)
+    return res
+
+
+def parse_recovery(
+    parser: Any,
+) -> qlast.Base:
+    ctx = pctx.ParserContext(name='', buffer='', start=-1, end=-1)
+    first = qltokens.T_IDENT("__???__", "__???__", ctx)
+    closers = [
+        qltokens.T_RBRACE("}", None, ctx),
+        qltokens.T_RPAREN(")", None, ctx),
+        qltokens.T_RBRACKET("]", None, ctx),
+        qltokens.T_DUMMYQUERY("", None, ctx),
+        qltokens.T_EOF("", None, ctx),
+        qltokens.T_UNION("UNION", None, ctx),
+    ]
+    res = parser.recover(first, closers)
+
+    assert isinstance(res, qlast.Expr)
+    return res
+
+
+def parse_fragment_with_recovery(
+    source: Union[qltokenizer.Source, str],
+    filename: Optional[str]=None,
+) -> qlast.Expr:
+    if isinstance(source, str):
+        source = qltokenizer.Source.from_string(source)
+    parser = qlparser.EdgeQLExpressionParser()
+    try:
+        res = parser.parse(source, filename=filename)
+    except errors.EdgeQLSyntaxError as e:
+        res = parse_recovery(parser)
+
     assert isinstance(res, qlast.Expr)
     return res
 

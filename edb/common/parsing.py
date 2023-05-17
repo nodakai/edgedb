@@ -104,7 +104,7 @@ class TokenMeta(type):
 
 
 class Token(parsing.Token, metaclass=TokenMeta):
-    def __init__(self, parser, val, clean_value, context=None):
+    def __init__(self, val, clean_value, context=None):
         super().__init__()
         self.val = val
         self.clean_value = clean_value
@@ -404,7 +404,7 @@ class Parser:
 
     def process_lex_token(self, mod, tok):
         return mod.TokenMeta.for_lex_token(tok.kind())(
-            self.parser, tok.text(), tok.value(), self.context(tok))
+            tok.text(), tok.value(), self.context(tok))
 
     def parse(self, input, filename=None):
         try:
@@ -434,6 +434,30 @@ class Parser:
 
         except ParserError as e:
             raise self.get_exception(e, context=e.context) from e
+
+        return self.parser.start[0].val
+
+    def recover(self, first, closers):
+        self.parser.token(first)
+
+        while True:
+            try:
+                self.parser.eoi()
+                break
+            except parsing.UnexpectedToken as e:
+                # print("no not done", e)
+                pass
+
+            for closer in closers:
+                try:
+                    self.parser.token(closer)
+                    # print("YES! DID IT!", closer)
+                    break
+                except parsing.UnexpectedToken as e:
+                    # print("noooo", closer, e)
+                    pass
+            else:
+                raise AssertionError('could not recover')
 
         return self.parser.start[0].val
 

@@ -238,6 +238,10 @@ class T_EOF(Token):
     pass
 
 
+class T_DUMMYQUERY(Token):
+    pass
+
+
 def _gen_keyword_tokens():
     # Define keyword tokens
 

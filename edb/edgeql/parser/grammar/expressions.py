@@ -53,6 +53,12 @@ class ExprStmt(Nonterm):
     def reduce_ExprStmtCore(self, *kids):
         self.val = kids[0].val
 
+    def reduce_WithBlock_DUMMYQUERY(self, *kids):
+        self.val = qlast.SelectQuery(
+            aliases=kids[0].val.aliases,
+            result=qlast.ObjectRef(name="__!!!__")
+        )
+
 
 class ExprStmtCore(Nonterm):
     def reduce_SimpleFor(self, *kids):
@@ -1371,6 +1377,9 @@ class Expr(Nonterm):
     def reduce_Expr_INTERSECT_Expr(self, *kids):
         self.val = qlast.BinOp(left=kids[0].val, op='INTERSECT',
                                right=kids[2].val)
+
+    def reduce_DUMMYQUERY(self, *kids):
+        self.val = qlast.ObjectRef(name="__!!!__")
 
 
 class Tuple(Nonterm):
