@@ -10,7 +10,6 @@ mod keywords;
 pub mod normalize;
 mod position;
 mod pynormalize;
-mod cparser;
 mod tokenizer;
 
 use errors::TokenizerError;

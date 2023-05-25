@@ -18,10 +18,11 @@ use edgeql_parser::keywords::{PARTIAL_RESERVED_KEYWORDS, UNRESERVED_KEYWORDS};
 use edgeql_parser::keywords::{CURRENT_RESERVED_KEYWORDS};
 use edgeql_parser::keywords::{FUTURE_RESERVED_KEYWORDS};
 use edgeql_parser::helpers::unquote_string;
+use edgeql_parser::cparser::cparse;
+
 use crate::errors::TokenizerError;
 use crate::pynormalize::py_pos;
 use crate::float;
-use crate::cparser::cparse;
 
 static mut TOKENS: Option<Tokens> = None;
 
