@@ -21,6 +21,7 @@ use edgeql_parser::helpers::unquote_string;
 use crate::errors::TokenizerError;
 use crate::pynormalize::py_pos;
 use crate::float;
+use crate::cparser::cparse;
 
 static mut TOKENS: Option<Tokens> = None;
 
@@ -255,6 +256,72 @@ pub fn convert_tokens(py: Python, rust_tokens: Vec<CowToken<'_>>,
         .into_object());
     Ok(PyList::new(py, &buf[..]))
 }
+
+// XXX positions
+pub fn convert_tokens_cheese(py: Python, rust_tokens: Vec<CowToken<'_>>,
+    _end_pos: Pos)
+    -> PyResult<Vec<(String, String)>>
+{
+    let tokens = unsafe { TOKENS.as_ref().expect("module initialized") };
+    let mut cache = Cache {
+        decimal: None,
+        keyword_buf: String::with_capacity(MAX_KEYWORD_LENGTH),
+    };
+    let mut buf = Vec::with_capacity(rust_tokens.len());
+    let mut tok_iter = rust_tokens.iter().peekable();
+    while let Some(tok) = tok_iter.next() {
+        // XXX: IS THIS LEAKING?
+        let (name, text, _value) = convert(py, tokens, &mut cache,
+                                          tok, &mut tok_iter)?;
+
+        buf.push((
+            String::from(name.to_string(py)?),
+            String::from(text.to_string(py)?),
+        ))
+    }
+    buf.push((
+        String::from(tokens.eof.to_string(py)?),
+        String::from(tokens.empty.to_string(py)?),
+    ));
+    Ok(buf)
+}
+
+pub fn parse_cheese(
+    py: Python, spec: &PyString, s: &PyString) -> PyResult<PyString> {
+    let data = s.to_string(py)?;
+
+    let mut token_stream = TokenStream::new(&data[..]);
+    let rust_tokens: Vec<_> = py.allow_threads(|| {
+        let mut tokens = Vec::new();
+        for res in &mut token_stream {
+            match res {
+                Ok(t) => tokens.push(CowToken::from(t)),
+                Err(e) => {
+                    return Err((e, token_stream.current_pos()));
+                }
+            }
+        }
+        Ok(tokens)
+    }).map_err(|(e, pos)| {
+        use combine::easy::Error::*;
+        let err = match e {
+            Unexpected(s) => s.to_string(),
+            o => o.to_string(),
+        };
+        TokenizerError::new(py, (err, py_pos(py, &pos)))
+    })?;
+    let cheese = convert_tokens_cheese(
+        py, rust_tokens, token_stream.current_pos()).map_err(|_| {
+        let err = "oh no";
+        TokenizerError::new(py, (err, py.None()))
+    })?;
+    let out = cparse(String::from(spec.to_string(py)?), cheese).map_err(|s| {
+        TokenizerError::new(py, (s, py.None()))
+    })?;
+
+    Ok(PyString::new(py, &*out))
+}
+
 
 
 impl Tokens {

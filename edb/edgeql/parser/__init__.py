@@ -60,6 +60,20 @@ def parse_fragment(
     return res
 
 
+def parse_fragment_raw(
+    source: Union[qltokenizer.Source, str],
+    filename: Optional[str]=None,
+) -> tuple[qlast.Expr, Any]:
+    if isinstance(source, str):
+        source = qltokenizer.Source.from_string(source)
+    parser = qlparser.EdgeQLExpressionParser()
+    parser.parse(source, filename=filename)
+    res = parser.parser.start[0].val
+    raw = parser.parser._stack[1][2]
+    assert isinstance(res, qlast.Expr)
+    return res, raw
+
+
 def parse_recovery(
     parser: Any,
 ) -> qlast.Base:
